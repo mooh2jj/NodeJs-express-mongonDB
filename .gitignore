@@ -7,3 +7,6 @@ package-lock.json
 package.json
 
 yarn.lock
+
+# dotenv environment variables file
+.env

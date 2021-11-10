@@ -1,3 +1,7 @@
+// env
+require('dotenv').config()
+
+const methodOverride = require('method-override')
 const bodyParser = require('body-parser')
 const express = require('express')
 
@@ -5,13 +9,12 @@ const express = require('express')
 const MongoClient = require('mongodb').MongoClient
 
 const app = express()
-const PORT = 5000
+const PORT = process.env.PORT
 
 app.use('/public', express.static('public'))
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: true}))
 
-const methodOverride = require('method-override')
 app.use(methodOverride('_method'))
 
 app.set('view engine', 'ejs')
@@ -19,7 +22,7 @@ app.set('view engine', 'ejs')
 
 var db;
 
-MongoClient.connect('mongodb+srv://mooh2jj:rz2m6CoQyH0owDOW@cluster0.ysfrr.mongodb.net/myFirstDatabase?retryWrites=true&w=majority',{ useUnifiedTopology: true }, (err, client)=>{
+MongoClient.connect(process.env.DB_URL,{ useUnifiedTopology: true }, (err, client)=>{
 
     if(err) return console.log(err)
 
@@ -146,6 +149,20 @@ app.post('/login', passport.authenticate('local', {
     res.redirect('/')
 })
 
+app.get('/mypage', isLogin, (req, res) => {     // 미들웨어 쓰는 법
+    console.log(req.user)
+    res.render('mypage.ejs', {user : req.user})
+})
+
+function isLogin(req, res, next){
+    if(req.user){
+        next()
+    } else {
+        res.send('로그인하시기 바랍니다.')
+    }
+
+}
+
 passport.use(new LocalStrategy({
     usernameField: 'id',
     passwordField: 'pw',
@@ -154,14 +171,28 @@ passport.use(new LocalStrategy({
 
     }, function (입력한아이디, 입력한비번, done) {
     console.log(입력한아이디, 입력한비번);
-    db.collection('login').findOne({ id: 입력한아이디 }, function (err, result) {
+    db.collection('login').findOne({ id: 'test' }, function (err, result) {
         if (err) return done(err)
     
         if (!result) return done(null, false, { message: '존재하지않는 아이디요' })
-        if (입력한비번 == result.pw) {
+        if ('test' == result.pw) {
             return done(null, result)
         } else {
             return done(null, false, { message: '비번틀렸어요' })
         }
     })
 }))
+
+passport.serializeUser((user, done) => {
+    done(null, user.id)
+})
+
+
+// deserializeUser()에서 찾은 유저 정보를 mypage.ejs에 보냄
+passport.deserializeUser((id, done) => {
+    // db에 있는 user.id로 유저를 찾은 뒤에 유저 정보를 done(null, {요기에 넣음})
+    db.collection('login').findOne({ id: id}, (err, result) => {
+        done(null, result)
+        
+    } )
+})
