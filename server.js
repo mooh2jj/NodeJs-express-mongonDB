@@ -91,6 +91,14 @@ app.get('/list', (req, res) => {
     
 })
 
+app.get('/search', (req, res) => {
+    console.log(req.query)
+    db.collection('post').find({title:req.query.value}).toArray((err, result) => {
+        console.log(result)
+        res.render('result.ejs', { posts : result})
+    })
+})
+
 app.delete('/delete', (req, res) => {
     console.log(req.body)
     req.body._id = parseInt(req.body._id)
